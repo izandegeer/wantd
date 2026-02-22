@@ -6,11 +6,12 @@ import { Gift, Heart, Share2, Star } from 'lucide-react'
 import { Logo } from '@/components/shared/Logo'
 
 export default async function HomePage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
-    redirect('/dashboard')
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) redirect('/dashboard')
+  } catch {
+    // Supabase no configurado o error de red — mostrar landing
   }
 
   return (
