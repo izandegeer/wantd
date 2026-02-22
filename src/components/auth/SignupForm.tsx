@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Gift, Loader2 } from 'lucide-react'
+import { Logo } from '@/components/shared/Logo'
+import { Loader2 } from 'lucide-react'
 
 const signupSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -37,37 +38,40 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupValues) {
     setIsLoading(true)
-    const supabase = createClient()
+    try {
+      const supabase = createClient()
 
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          username: values.username,
-          full_name: values.full_name,
+      const { error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            username: values.username,
+            full_name: values.full_name,
+          },
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
         },
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    })
+      })
 
-    if (error) {
-      toast.error(error.message)
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      toast.success('Cuenta creada. Revisa tu email para confirmarla.')
+      router.push('/login')
+    } catch {
+      toast.error('Error de conexión. Inténtalo de nuevo.')
+    } finally {
       setIsLoading(false)
-      return
     }
-
-    toast.success('Cuenta creada. Revisa tu email para confirmarla.')
-    router.push('/login')
   }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="flex justify-center mb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Gift className="h-6 w-6 text-primary" />
-          </div>
+        <div className="flex justify-center mb-3">
+          <Logo size="lg" iconOnly />
         </div>
         <CardTitle className="text-2xl">Crear cuenta</CardTitle>
         <CardDescription>Empieza a organizar tus deseos</CardDescription>

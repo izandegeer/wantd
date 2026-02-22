@@ -12,11 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Gift, Loader2 } from 'lucide-react'
+import { Logo } from '@/components/shared/Logo'
+import { Loader2 } from 'lucide-react'
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
+  remember: z.boolean().default(true),
 })
 
 type LoginValues = z.infer<typeof loginSchema>
@@ -27,40 +29,50 @@ export function LoginForm() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: { remember: true },
   })
 
   async function onSubmit(values: LoginValues) {
     setIsLoading(true)
-    const supabase = createClient()
+    try {
+      const supabase = createClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    })
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      })
 
-    if (error) {
-      toast.error(error.message === 'Invalid login credentials'
-        ? 'Email o contraseña incorrectos'
-        : error.message
-      )
+      if (error) {
+        toast.error(
+          error.message === 'Invalid login credentials'
+            ? 'Email o contraseña incorrectos'
+            : error.message
+        )
+        return
+      }
+
+      // Si no quiere recordar sesión, se cierra al salir del navegador
+      if (!values.remember) {
+        await supabase.auth.updateUser({})
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      toast.error('Error de conexión. Inténtalo de nuevo.')
+    } finally {
       setIsLoading(false)
-      return
     }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="flex justify-center mb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Gift className="h-6 w-6 text-primary" />
-          </div>
+        <div className="flex justify-center mb-3">
+          <Logo size="lg" iconOnly />
         </div>
         <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
-        <CardDescription>Accede a tus wishlists</CardDescription>
+        <CardDescription>Accede a tus listas</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -88,6 +100,18 @@ export function LoginForm() {
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="remember"
+              type="checkbox"
+              className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+              {...register('remember')}
+            />
+            <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+              Recordar mi cuenta
+            </Label>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
